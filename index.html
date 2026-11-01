@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0E6E66">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Тихие руки">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>Тихие руки</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;600&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one-column phone app, bottom tab bar; calm lilac-grey ground, deep teal for action, zone colours only for state */
+:root{
+  --bg:#F2F1F6; --surface:#FFFFFF; --surface-2:#E9E7F0; --ink:#1D1A2B; --muted:#6A6680; --line:#DCD9E6;
+  --accent:#0E6E66; --accent-ink:#FFFFFF; --accent-soft:#D7ECE9;
+  --green:#2F8F4E; --green-soft:#E1F2E6; --yellow:#B7791F; --yellow-soft:#FBEFD7; --red:#C2413A; --red-soft:#FBE3E1;
+  --f-display:"Unbounded", "Manrope", system-ui, sans-serif; --f-body:"Manrope", system-ui, -apple-system, "Segoe UI", sans-serif; --f-num:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r:16px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14121C; --surface:#1E1B29; --surface-2:#282436; --ink:#ECEAF4; --muted:#A39EB8; --line:#34304A;
+  --accent:#3CB8AC; --accent-ink:#0B1F1D; --accent-soft:#16332F;
+  --green:#5CC07C; --green-soft:#1A3022; --yellow:#E2A84A; --yellow-soft:#3A2D14; --red:#EE7A72; --red-soft:#3D1E1C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14121C; --surface:#1E1B29; --surface-2:#282436; --ink:#ECEAF4; --muted:#A39EB8; --line:#34304A;
+  --accent:#3CB8AC; --accent-ink:#0B1F1D; --accent-soft:#16332F;
+  --green:#5CC07C; --green-soft:#1A3022; --yellow:#E2A84A; --yellow-soft:#3A2D14; --red:#EE7A72; --red-soft:#3D1E1C; color-scheme:dark}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px calc(96px + env(safe-area-inset-bottom,0px))}
+h1,h2{font-family:var(--f-display);font-weight:600;text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:1.45rem;line-height:1.2}
+h2{font-size:1.1rem;line-height:1.25}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+.label{font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.stack{display:flex;flex-direction:column;gap:12px}
+.stack-lg{display:flex;flex-direction:column;gap:20px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.card{background:var(--surface);border-radius:var(--r);padding:16px;border:1px solid var(--line)}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+/* buttons */
+.btn{border:0;border-radius:14px;padding:14px 18px;font-weight:600;background:var(--surface-2);min-height:48px}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;border:1px solid var(--line)}
+.btn.block{width:100%}
+.btn:disabled{opacity:.45;cursor:default}
+.sos{width:100%;border:0;border-radius:24px;background:var(--accent);color:var(--accent-ink);padding:26px 20px;text-align:left;display:flex;flex-direction:column;gap:6px}
+.sos b{font-family:var(--f-display);font-size:1.35rem;font-weight:600}
+.sos span{opacity:.85;font-size:.95rem}
+.caught{width:100%;border:1px solid var(--line);border-radius:18px;background:var(--surface);padding:16px 18px;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tool{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:14px;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:92px}
+.tool b{font-weight:700}
+.tool .ic{width:28px;height:28px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;margin-bottom:4px}
+.tool .ic svg{width:16px;height:16px;stroke:var(--accent);fill:none;stroke-width:2}
+.tool.wide{grid-column:1/-1;min-height:0;flex-direction:row;align-items:center;gap:12px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 13px;font-size:.92rem;min-height:38px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* slider */
+.scale{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:4px}
+.scale button{border:0;border-radius:10px;padding:12px 0;font-family:var(--f-num);font-weight:500;background:var(--surface-2);min-height:46px}
+.scale button.z0{box-shadow:inset 0 -3px 0 var(--green)}
+.scale button.z1{box-shadow:inset 0 -3px 0 var(--yellow)}
+.scale button.z2{box-shadow:inset 0 -3px 0 var(--red)}
+.scale button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.zone{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:600}
+.zone.g{background:var(--green-soft);color:var(--green)}
+.zone.y{background:var(--yellow-soft);color:var(--yellow)}
+.zone.r{background:var(--red-soft);color:var(--red)}
+
+/* flow */
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.back{border:0;background:var(--surface-2);border-radius:999px;padding:8px 14px;font-weight:600}
+.progress{display:flex;gap:4px;flex:1;max-width:180px}
+.progress i{flex:1;height:4px;border-radius:4px;background:var(--line)}
+.progress i.on{background:var(--accent)}
+.step{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.step .tick{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:transparent;display:grid;place-items:center;padding:0}
+.step .tick[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
+.step .tick svg{width:14px;height:14px;stroke:var(--accent-ink);stroke-width:3;fill:none;opacity:0}
+.step .tick[aria-pressed="true"] svg{opacity:1}
+.step .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.step .body b{font-weight:700}
+.linkbtn{align-self:flex-start;border:0;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:6px 12px;font-size:.88rem;font-weight:600}
+.quote{font-size:1.05rem;border-left:3px solid var(--accent);padding-left:12px}
+textarea,input[type=text],input[type=date],input[type=time]{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px;font:inherit;min-height:48px}
+textarea{min-height:76px;resize:vertical}
+.field{display:flex;flex-direction:column;gap:8px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* tabs */
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px));z-index:5}
+.tabs[hidden]{display:none}
+.tabs .in{display:flex;max-width:560px;width:100%}
+.tabs button{flex:1;border:0;background:none;padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.78rem;color:var(--muted);font-weight:600}
+.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8}
+.tabs button[aria-current="page"]{color:var(--accent)}
+
+/* diary */
+.week{display:flex;flex-direction:column;gap:8px}
+.entry{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;text-align:left;width:100%}
+.entry .head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.arrow{font-family:var(--f-num)}
+.tag{display:inline-block;font-size:.78rem;background:var(--surface-2);border-radius:6px;padding:2px 7px;margin:0 4px 4px 0}
+.empty{text-align:center;padding:28px 16px;display:flex;flex-direction:column;gap:12px;align-items:center}
+
+/* stats */
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.kpi b{display:block;font-family:var(--f-num);font-size:1.35rem;font-weight:500}
+.bar{height:8px;border-radius:6px;background:var(--surface-2);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.mrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.mrow:last-child{border-bottom:0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.wtable{width:100%;border-collapse:collapse;font-size:.9rem}
+.wtable th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:right;font-weight:600;padding:6px 4px}
+.wtable th:first-child,.wtable td:first-child{text-align:left}
+.wtable td{padding:9px 4px;border-top:1px solid var(--line);text-align:right}
+.scroll-x{overflow-x:auto}
+
+/* overlay tools */
+.overlay{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.overlay .bar-top{display:flex;justify-content:space-between;align-items:center;padding:14px max(16px,env(safe-area-inset-left,0px)) 6px max(16px,env(safe-area-inset-right,0px));gap:12px}
+.overlay .content{flex:1;overflow:auto;padding:8px max(16px,env(safe-area-inset-left,0px)) 24px max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px;max-width:560px;width:100%;margin:0 auto}
+.bubbles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;touch-action:manipulation}
+.bub{aspect-ratio:1;max-width:100%;border-radius:50%;border:0;padding:0;background:radial-gradient(circle at 35% 30%,var(--surface) 0 18%,var(--accent-soft) 60%,var(--surface-2));box-shadow:inset 0 -3px 6px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);transition:transform .08s}
+.bub:active{transform:scale(.9)}
+.bub.popped{background:var(--surface-2);box-shadow:inset 0 2px 4px rgba(0,0,0,.12);transform:scale(.82)}
+.breath{display:grid;place-items:center;flex:1;min-height:300px}
+.circle{width:min(70vw,280px);aspect-ratio:1;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;transform:scale(.55);transition-property:transform;transition-timing-function:ease-in-out;border:2px solid var(--accent)}
+.circle span{font-family:var(--f-display);font-size:1.25rem;color:var(--accent)}
+.big{font-family:var(--f-num);font-size:2.6rem;font-weight:500;text-align:center}
+.wave svg{width:100%;height:auto;display:block}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:30;max-width:calc(100% - 32px)}
+.note{font-size:.84rem;color:var(--muted);background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.ground .count{display:flex;gap:8px;flex-wrap:wrap}
+.ground .dot{width:44px;height:44px;border-radius:50%;border:2px solid var(--accent);background:transparent}
+.ground .dot[aria-pressed="true"]{background:var(--accent)}
+@media (prefers-reduced-motion: reduce){.circle{transition:none!important}.bub{transition:none}}
+</style>
+<style>
+html{padding-top:env(safe-area-inset-top,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+img{max-width:100%}
+</style>
+</head>
+<body>
+
+<div id="app" class="wrap" aria-live="polite"></div>
+<nav class="tabs" aria-label="Разделы"><div class="in">
+  <button data-tab="home" aria-current="page"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/></svg>Помощь</button>
+  <button data-tab="diary"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Дневник</button>
+  <button data-tab="stats"><svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>Итоги</button>
+</div></nav>
+<div id="overlay"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- reference lists ---------- */
+const APP_VERSION="1.0.0";
+const METHODS=["Барьер: шапка","Барьер: антистресс","Барьер: кукла","Осознанность: наблюдение","Осознанность: описание","Осознанность: участие","«Стоп!»","Умыться / холодная вода","Движение 30–90 сек","Дыхание с длинным выдохом","Напряжение–расслабление","Смена контекста","Отвлечение","Улучшение момента","Ничего не применила"];
+const SOURCES=["Скука","Усталость","Тревога","Напряжение","Автоматизм / привычка","Залипла в компьютер / телефон","Мысли гоняю","Злость / раздражение","Не знаю"];
+const KINDS=["Позыв","Приступ","Поймала себя в процессе"];
+const HELPED=["Да","Частично","Нет"];
+const DAYS=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
+const MON=["янв","фев","мар","апр","мая","июн","июл","авг","сен","окт","ноя","дек"];
+
+/* ---------- helpers ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const zoneOf=n=>n==null||n===""?null:(n>=7?"r":n>=4?"y":"g");
+const zoneName={g:"Зелёная",y:"Жёлтая",r:"Красная"};
+const pad=n=>String(n).padStart(2,"0");
+const isoDate=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const parseDate=s=>{const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const mondayOf=s=>{const d=parseDate(s);const w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return d};
+const fmtDay=s=>{const d=parseDate(s);return DAYS[(d.getDay()+6)%7]+", "+d.getDate()+" "+MON[d.getMonth()]};
+const fmtWeek=m=>{const e=new Date(m);e.setDate(e.getDate()+6);return m.getDate()+" "+MON[m.getMonth()]+" – "+e.getDate()+" "+MON[e.getMonth()]};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const vib=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+const svgTick='<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>';
+function toast(t){const el=document.createElement("div");el.className="toast";el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2200)}
+
+/* ---------- storage: on this phone (localStorage) ---------- */
+let entries=[]; let storeMode="local";
+const LS="ttm-entries-v1", LS_CFG="ttm-config-v1";
+function lsRead(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function lsWrite(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){toast("Не получилось сохранить на телефоне")}}
+let cfg=lsRead(LS_CFG,{url:"",key:""});
+async function initStore(){
+  entries=lsRead(LS,[]);
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+  render(); syncPending(true);
+}
+async function saveEntry(e){
+  const id=e.id||uid(); const rec=Object.assign({},e,{id});
+  const i=entries.findIndex(x=>x.id===id); if(i>=0)entries[i]=rec;else entries.push(rec);
+  lsWrite(LS,entries); render(); return id;
+}
+async function patchEntry(id,patch){const r=entries.find(x=>x.id===id);if(r){Object.assign(r,patch);lsWrite(LS,entries);softRender()}}
+async function deleteEntry(id){
+  const r=entries.find(x=>x.id===id); entries=entries.filter(x=>x.id!==id); lsWrite(LS,entries); render();
+  if(r&&(r.sheet==="ok"||r.sheetAt)){const q=lsRead("ttm-deletes",[]);q.push(id);lsWrite("ttm-deletes",q);syncPending(true)}
+}
+
+/* ---------- Google Sheets sync via Apps Script web app ---------- */
+let syncChain=Promise.resolve(); let syncing=0;
+function softRender(){if(view!=="flow"&&view!=="edit"&&view!=="settings")render()}
+async function post(body){
+  if(!cfg.url||!cfg.key)throw new Error("nocfg");
+  const res=await fetch(cfg.url,{method:"POST",body:JSON.stringify(Object.assign({key:cfg.key},body)),headers:{"Content-Type":"text/plain;charset=utf-8"},redirect:"follow"});
+  if(!res.ok)throw new Error("http "+res.status);
+  const j=await res.json(); if(!j.ok)throw new Error(j.error||"error"); return j;
+}
+function syncErrText(e){const m=String(e&&e.message||e);
+  if(m==="nocfg")return "Таблица не подключена: откройте настройки";
+  if(m==="bad_key")return "Неверный ключ: проверьте его в настройках";
+  if(/Failed to fetch|NetworkError|Load failed|http/.test(m))return navigator.onLine===false?"Нет интернета — отправлю позже":"Google не ответил — отправлю позже";
+  return "Таблица ответила ошибкой: "+m;}
+function queueSync(rec,quiet){syncing++;softRender();syncChain=syncChain.then(()=>syncOne(rec,quiet)).finally(()=>{syncing--;softRender()});return syncChain}
+async function syncOne(rec,quiet){
+  try{const body=Object.assign({},rec);delete body.sheet;delete body.sheetErr;delete body.sheetAt;
+    await post({action:"write",entry:body});await patchEntry(rec.id,{sheet:"ok",sheetErr:"",sheetAt:Date.now()});if(!quiet)toast("Записано и отправлено в таблицу")}
+  catch(e){const m=syncErrText(e);await patchEntry(rec.id,{sheet:"err",sheetErr:m});if(!quiet)toast("Записано на телефоне. "+m)}
+}
+let pendingBusy=false;
+async function syncPending(quiet){
+  if(pendingBusy||!cfg.url||!cfg.key||navigator.onLine===false)return; pendingBusy=true;
+  try{
+    const dq=lsRead("ttm-deletes",[]);const left=[];
+    for(const id of dq){try{await post({action:"delete",id})}catch(e){left.push(id)}}
+    lsWrite("ttm-deletes",left);
+    for(const e of entries.filter(x=>x.sheet!=="ok"))await queueSync(e,true);
+    if(!quiet){const n=entries.filter(x=>x.sheet!=="ok").length;toast(n?"Не отправлено: "+n:"Всё отправлено в таблицу")}
+  }finally{pendingBusy=false}
+}
+window.addEventListener("online",()=>syncPending(true));
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")syncPending(true)});
+
+/* ---------- state ---------- */
+let tab="home"; let view="home"; let flow=null;
+function newFlow(caught){
+  const now=new Date();
+  return {caught:!!caught,step:0,before:null,after:null,done:{},answers:{now:"",global:"",choose:""},
+    draft:{date:isoDate(now),time:pad(now.getHours())+":"+pad(now.getMinutes()),kinds:caught?["Поймала себя в процессе"]:[],situation:"",methods:["«Стоп!»"],helped:"",couldHelp:[],sources:[],notes:""}};
+}
+
+/* ---------- plans by zone ---------- */
+const PLANS={
+ g:{title:"Зелёная зона: наблюдаю",lead:"Позыв слабый. Его можно переждать, просто наблюдая.",steps:[
+   {t:"Наблюдение",d:"Заметь позыв и ощущения в пальцах. Смотри на него как на волну: он поднимается и спадает сам.",m:"Осознанность: наблюдение",tool:"wave",tl:"Переждать волну"},
+   {t:"Описание",d:"Назови про себя: «позыв столько-то из 10, напряжение в пальцах, мне скучно». Только факты, без «опять я».",m:"Осознанность: описание"},
+   {t:"Руки заняты",d:"Антистресс или кукла в руки. Если ты в зоне риска, надень шапку.",m:"Барьер: антистресс",tool:"bubbles",tl:"Пупырка"}]},
+ y:{title:"Жёлтая зона: барьер и одно дело",lead:"Тянет сильно, но ты можешь думать. Сначала руки, потом дыхание.",steps:[
+   {t:"Барьер",d:"Надень шапку, возьми куклу или антистресс.",m:"Барьер: шапка"},
+   {t:"Дыхание с длинным выдохом",d:"Вдох 4 секунды, выдох 6–8 секунд, 1–3 минуты.",m:"Дыхание с длинным выдохом",tool:"breath",tl:"Дышать"},
+   {t:"Одно дело",d:"Выбери одно занятие и будь в нём целиком: пить чай и только пить, мыть посуду и только мыть. 5–15 минут.",m:"Осознанность: участие"},
+   {t:"Самоподдержка",d:"«Мне сейчас тяжело, но я не обязана решать это прямо сейчас. Это пройдёт».",m:"Улучшение момента",tool:"ground",tl:"5-4-3-2-1"}]},
+ r:{title:"Красная зона: сначала тело",lead:"Мышление сужено, и это нормально. Не думай — делай по шагам.",steps:[
+   {t:"Холодная вода или движение",d:"Умойся холодной водой 10–30 секунд. Или 30–90 секунд прыжков, приседаний, бега на месте.",m:"Умыться / холодная вода"},
+   {t:"Дыхание",d:"Вдох 4, выдох 6–8. Пока сердце не замедлится.",m:"Дыхание с длинным выдохом",tool:"breath",tl:"Дышать"},
+   {t:"Смена места",d:"Встань и выйди из комнаты. Отложи телефон, закрой ноутбук.",m:"Смена контекста"},
+   {t:"Отвлечение руками",d:"10–30 минут дела, которое занимает руки: уборка, готовка, лепка, рисование.",m:"Отвлечение",tool:"distract",tl:"Таймер"},
+   {t:"Барьер на выходе",d:"Возвращайся уже в шапке или с куклой.",m:"Барьер: шапка"}],
+   note:"Холод и нагрузка не подходят при проблемах с сердцем, чувствительности к холоду или травмах."}
+};
+
+/* ---------- render ---------- */
+function render(){
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===tab?"page":"false"));
+  $(".tabs").hidden=(view==="flow"||view==="settings");
+  const app=$("#app");
+  if(view==="flow")app.innerHTML=renderFlow();
+  else if(view==="settings")app.innerHTML=renderSettings();
+  else if(view==="edit")app.innerHTML=renderEdit();
+  else if(tab==="home")app.innerHTML=renderHome();
+  else if(tab==="diary")app.innerHTML=renderDiary();
+  else app.innerHTML=renderStats();
+}
+
+function renderHome(){
+  const today=isoDate(new Date());
+  const t=entries.filter(e=>e.date===today).length;
+  const storeNote=!(cfg.url&&cfg.key)?'<div class="card stack" style="gap:8px"><b>Google-таблица не подключена</b><p class="small muted">Записи сохраняются на телефоне. Подключите таблицу, и они будут уходить туда сами.</p><button class="btn ghost" data-act="settings">Подключить</button></div>':"";
+  return `<div class="stack-lg">
+    <div class="row" style="justify-content:space-between;align-items:flex-start;flex-wrap:nowrap"><div class="stack" style="gap:6px;min-width:0"><p class="label">Тихие руки</p><h1>Что сейчас происходит?</h1></div><button class="back" data-act="settings" aria-label="Настройки">Настройки</button></div>
+    <button class="sos" data-act="sos"><b>Мне сейчас тянет</b><span>Стоп, три вопроса и план по силе позыва</span></button>
+    <button class="caught" data-act="caught"><span><b>Поймала себя в процессе</b><br><span class="muted small">Руки уже в волосах</span></span><span aria-hidden="true">→</span></button>
+    <div class="stack"><p class="label">Для рук и дыхания</p>
+      <div class="tools">
+        ${toolBtn("bubbles","Пупырка","Лопать пузыри",'<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="16" cy="16" r="3"/>')}
+        ${toolBtn("breath","Дыхание","Вдох 4, выдох 6–8",'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>')}
+        ${toolBtn("wave","Переждать волну","Отмечать позыв",'<path d="M3 15c3-6 5-6 7 0s4 6 7 0 3-3 4-3"/>')}
+        ${toolBtn("ground","5-4-3-2-1","Вернуться в тело",'<path d="M12 3v18M3 12h18"/>')}
+        ${toolBtn("distract","Таймер отвлечения","10–20 минут, руки заняты",'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>',true)}
+      </div></div>
+    <div class="row" style="justify-content:space-between"><p class="muted small">Сегодня записей: <span class="num">${t}</span></p><button class="btn ghost" data-act="add">Добавить запись</button></div>
+    ${storeNote}
+  </div>`;
+}
+function toolBtn(id,t,d,icon,wide){return `<button class="tool${wide?" wide":""}" data-tool="${id}"><span class="ic"><svg viewBox="0 0 24 24">${icon}</svg></span><span><b>${t}</b><br><span class="muted small">${d}</span></span></button>`}
+
+function scaleHtml(sel,act){let h='<div class="scale" role="group" aria-label="Сила позыва от 0 до 10">';for(let i=0;i<=10;i++){h+=`<button data-act="${act}" data-v="${i}" class="z${i>=7?2:i>=4?1:0}" aria-pressed="${sel===i}">${i}</button>`}return h+"</div>"}
+function chipsHtml(list,sel,field){return '<div class="chips">'+list.map(v=>`<button class="chip" data-chip="${field}" data-v="${esc(v)}" aria-pressed="${sel.includes(v)}">${esc(v)}</button>`).join("")+"</div>"}
+
+function renderFlow(){
+  const f=flow; const total=5;
+  const prog='<div class="progress" aria-hidden="true">'+Array.from({length:total},(_,i)=>`<i class="${i<=f.step?"on":""}"></i>`).join("")+"</div>";
+  const top=`<div class="top"><button class="back" data-act="flow-back">${f.step===0?"Закрыть":"Назад"}</button>${prog}</div>`;
+  let body="";
+  if(f.step===0){
+    body=f.caught?`<div class="stack-lg"><h1>Стоп. Руки от головы.</h1>
+      <div class="stack"><p class="quote">Опусти руки. Отложи волоски. Себя не ругаем: ты заметила, и это уже навык.</p>
+      <p class="muted">Сделай один медленный выдох.</p></div>
+      <button class="btn primary block" data-act="next">Руки внизу</button></div>`
+    :`<div class="stack-lg"><h1>Стоп.</h1>
+      <div class="stack"><p class="quote">Замри на секунду. Опусти руки от головы.</p>
+      <p class="muted">Сделай один медленный выдох — длиннее вдоха.</p></div>
+      <button class="btn primary block" data-act="next">Замерла</button></div>`;
+  }else if(f.step===1){
+    body=`<div class="stack-lg"><h1>Три вопроса</h1><p class="muted">Можно ответить про себя или коротко записать.</p>
+      ${qField("now","Чего я хочу прямо сейчас?")}${qField("global","Чего я хочу глобально?")}${qField("choose","Что я выбираю сделать?")}
+      <button class="btn primary block" data-act="next">Дальше</button></div>`;
+  }else if(f.step===2){
+    const z=zoneOf(f.before);
+    body=`<div class="stack-lg"><h1>Насколько сильно тянет?</h1><p class="muted">0 — почти не тянет, 10 — очень сильно.</p>
+      ${scaleHtml(f.before,"before")}
+      <p>${z?`<span class="zone ${z}">${zoneName[z]} зона</span>`:'<span class="muted small">Выбери число</span>'}</p>
+      <button class="btn primary block" data-act="next" ${f.before==null?"disabled":""}>Показать план</button></div>`;
+  }else if(f.step===3){
+    const p=PLANS[zoneOf(f.before)];
+    body=`<div class="stack-lg"><div class="stack" style="gap:6px"><span class="zone ${zoneOf(f.before)}">Позыв ${f.before} из 10</span><h1>${p.title}</h1><p class="muted">${p.lead}</p></div>
+      <div class="stack">${p.steps.map((s,i)=>`<div class="step"><button class="tick" data-act="tick" data-i="${i}" aria-pressed="${!!f.done[i]}" aria-label="Сделала: ${esc(s.t)}">${svgTick}</button>
+        <div class="body"><b>${s.t}</b><p class="small">${s.d}</p>${s.tool?`<button class="linkbtn" data-tool="${s.tool}">${s.tl} →</button>`:""}</div></div>`).join("")}</div>
+      ${p.note?`<p class="note">${p.note}</p>`:""}
+      <button class="btn primary block" data-act="next">Я сделала, что смогла</button></div>`;
+  }else if(f.step===4){
+    const d=f.after!=null?f.after-f.before:null;
+    body=`<div class="stack-lg"><h1>Сколько сейчас?</h1><p class="muted">Было <span class="num">${f.before}</span> из 10.</p>
+      ${scaleHtml(f.after,"after")}
+      ${d!=null?`<p class="card">${d<0?`Позыв снизился на <b class="num">${-d}</b>. Ты справилась.`:d===0?"Позыв на том же уровне. Можно вернуться к плану или взять другой метод.":"Позыв вырос. Попробуй шаги красной зоны: холодная вода и смена места."}</p>`:""}
+      ${d!=null&&d>=0?'<button class="btn ghost block" data-act="replan">Вернуться к плану</button>':""}
+      <button class="btn primary block" data-act="next" ${f.after==null?"disabled":""}>Записать в дневник</button></div>`;
+  }else{
+    body=`<div class="stack-lg"><h1>Запись в дневник</h1>${entryForm(f.draft,{before:f.before,after:f.after})}
+      <button class="btn primary block" data-act="save-flow">Сохранить</button>
+      <button class="btn ghost block" data-act="skip-save">Не сохранять</button></div>`;
+  }
+  return top+body;
+}
+function qField(k,label){return `<label class="field"><span><b>${label}</b></span><input type="text" data-q="${k}" value="${esc(flow.answers[k])}" autocomplete="off"></label>`}
+
+function entryForm(d,lv){
+  const lvl=lv?`<div class="row"><span class="zone ${zoneOf(lv.before)}">До: ${lv.before}</span><span class="arrow">→</span><span class="zone ${zoneOf(lv.after)}">После: ${lv.after}</span></div>`:"";
+  return `<div class="stack-lg">${lvl}
+    <div class="twocol"><label class="field"><span class="label">Дата</span><input type="date" data-f="date" value="${esc(d.date)}"></label>
+    <label class="field"><span class="label">Время</span><input type="time" data-f="time" value="${esc(d.time)}"></label></div>
+    <div class="field"><span class="label">Что было</span>${chipsHtml(KINDS,d.kinds,"kinds")}</div>
+    <label class="field"><span class="label">Где была, что делала</span><textarea data-f="situation" placeholder="За ноутбуком, лёжа с телефоном…">${esc(d.situation)}</textarea></label>
+    <div class="field"><span class="label">Какой метод применила</span>${chipsHtml(METHODS,d.methods,"methods")}</div>
+    <div class="field"><span class="label">Помогло?</span>${chipsHtml(HELPED,d.helped?[d.helped]:[],"helped")}</div>
+    <div class="field"><span class="label">Какой метод мог бы помочь</span>${chipsHtml(METHODS.filter(m=>m!=="Ничего не применила"),d.couldHelp,"couldHelp")}</div>
+    <div class="field"><span class="label">Источник</span>${chipsHtml(SOURCES,d.sources,"sources")}</div>
+    <label class="field"><span class="label">Заметки</span><textarea data-f="notes">${esc(d.notes)}</textarea></label></div>`;
+}
+
+function renderSettings(){
+  return `<div class="top"><button class="back" data-act="settings-back">Назад</button><span></span></div>
+  <div class="stack-lg"><h1>Настройки</h1>
+    <div class="card stack"><b>Google-таблица</b><p class="small muted">Адрес веб-приложения Apps Script и ключ из журнала функции setup(). Как их получить — в инструкции в репозитории.</p>
+      <label class="field"><span class="label">Адрес скрипта</span><input type="text" id="cfg-url" value="${esc(cfg.url)}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <label class="field"><span class="label">Ключ</span><input type="text" id="cfg-key" value="${esc(cfg.key)}" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <p class="small" id="cfg-out" aria-live="polite"></p>
+      <div class="row"><button class="btn ghost" data-act="settings-test">Проверить связь</button><button class="btn primary" data-act="settings-save">Сохранить</button></div></div>
+    <div class="card stack"><b>Резервная копия</b><p class="small muted">Все записи с телефона одним файлом.</p><button class="btn ghost" data-act="export">Скачать записи</button></div>
+    <p class="small muted">Версия ${APP_VERSION}</p>
+  </div>`;
+}
+let editing=null;
+function renderEdit(){
+  const e=editing;
+  return `<div class="top"><button class="back" data-act="edit-back">Назад</button><span></span></div>
+  <div class="stack-lg"><h1>${e.id?"Запись":"Новая запись"}</h1>
+    <div class="field"><span class="label">Позыв, самый сильный момент</span>${scaleHtml(e.before,"ebefore")}</div>
+    <div class="field"><span class="label">Позыв после (если помните)</span>${scaleHtml(e.after,"eafter")}</div>
+    ${entryForm(e,null)}
+    <button class="btn primary block" data-act="save-edit" ${e.before==null?"disabled":""}>Сохранить</button>
+    ${e.id?'<button class="btn ghost block" data-act="del">Удалить запись</button>':""}
+  </div>`;
+}
+
+function groupWeeks(list){
+  const m=new Map();
+  list.forEach(e=>{const k=isoDate(mondayOf(e.date));if(!m.has(k))m.set(k,[]);m.get(k).push(e)});
+  return [...m.entries()].sort((a,b)=>b[0].localeCompare(a[0])).map(([k,v])=>[k,v.sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time))]);
+}
+function renderDiary(){
+  const head=`<div class="row" style="justify-content:space-between;margin-bottom:16px"><h1>Дневник</h1><button class="btn primary" data-act="add">Добавить</button></div>`;
+  if(storeMode==="loading")return head+'<p class="muted">Загружаю записи…</p>';
+  if(!entries.length)return head+`<div class="card empty"><h2>Пока пусто</h2><p class="muted">Записи появятся здесь после кнопки «Мне сейчас тянет» или если добавить их вручную.</p></div>`;
+  const uns=entries.filter(e=>e.sheet!=="ok").length;
+  const syncBar=syncing?`<p class="note">Отправляю в Google-таблицу…</p>`
+    :uns?`<div class="card row" style="justify-content:space-between"><span class="small">Не в таблице: <b class="num">${uns}</b></span><button class="btn primary" data-act="resend">Отправить в таблицу</button></div>`
+    :`<p class="muted small">Все записи есть в Google-таблице.</p>`;
+  return head+'<div class="stack-lg">'+syncBar+groupWeeks(entries).map(([k,v])=>`<section class="week"><p class="label">Неделя ${fmtWeek(parseDate(k))} · ${v.length}</p>
+    ${v.map(e=>{const z=zoneOf(e.before);return `<button class="entry" data-open="${esc(e.id)}"><div class="head"><b>${fmtDay(e.date)}${e.time?`, <span class="num">${esc(e.time)}</span>`:""}</b>
+      <span class="row" style="gap:4px">${z?`<span class="zone ${z}">${e.before}</span>`:""}${e.after!=null?`<span class="arrow muted">→</span><span class="zone ${zoneOf(e.after)}">${e.after}</span>`:""}</span></div>
+      ${e.kinds&&e.kinds.length?`<div>${e.kinds.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</div>`:""}
+      ${e.situation?`<p class="small muted">${esc(e.situation)}</p>`:""}
+      ${e.methods&&e.methods.length?`<p class="small"><b>Методы:</b> ${e.methods.map(esc).join(", ")}${e.helped?` · помогло: ${esc(e.helped)}`:""}</p>`:""}
+      <p class="small ${e.sheet==="ok"?"muted":""}" style="${e.sheet==="err"?"color:var(--red)":""}">${e.sheet==="ok"?"✓ в таблице":e.sheet==="err"?"Не отправлено: "+esc(e.sheetErr||""):"Ещё не в таблице"}</p>
+    </button>`}).join("")}</section>`).join("")+"</div>";
+}
+
+function renderStats(){
+  const head='<h1 style="margin-bottom:16px">Итоги</h1>';
+  if(!entries.length)return head+'<div class="card empty"><h2>Итоги появятся после первых записей</h2><p class="muted">Здесь будет видно, сколько было эпизодов за неделю, насколько снижался позыв и какие методы помогают.</p></div>';
+  const weeks=groupWeeks(entries);
+  const thisW=weeks[0][1].filter(e=>isoDate(mondayOf(e.date))===isoDate(mondayOf(isoDate(new Date()))));
+  const avg=a=>a.length?Math.round(a.reduce((s,x)=>s+x,0)/a.length*10)/10:null;
+  const pairs=entries.filter(e=>e.before!=null&&e.after!=null);
+  const drop=avg(pairs.map(e=>e.before-e.after));
+  const kpi=`<div class="kpis"><div class="kpi"><b>${thisW.length}</b><span class="small muted">эпизодов на этой неделе</span></div>
+    <div class="kpi"><b>${avg(thisW.filter(e=>e.before!=null).map(e=>e.before))??"–"}</b><span class="small muted">средний позыв за неделю</span></div>
+    <div class="kpi"><b>${drop!=null?(drop>0?"−":"")+Math.abs(drop):"–"}</b><span class="small muted">в среднем снижение после методов</span></div></div>`;
+  const rows=weeks.map(([k,v])=>{const b=v.filter(e=>e.before!=null).map(e=>e.before);const a=v.filter(e=>e.after!=null).map(e=>e.after);
+    return `<tr><td>${fmtWeek(parseDate(k))}</td><td class="num">${v.length}</td><td class="num">${avg(b)??"–"}</td><td class="num">${avg(a)??"–"}</td><td class="num">${b.filter(x=>x>=7).length}</td></tr>`}).join("");
+  const table=`<div class="card"><p class="label" style="margin-bottom:6px">По неделям</p><div class="scroll-x"><table class="wtable"><thead><tr><th>Неделя</th><th>Эпизоды</th><th>До</th><th>После</th><th>Красн.</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  const ms=METHODS.map(m=>{const used=entries.filter(e=>(e.methods||[]).includes(m));const y=used.filter(e=>e.helped==="Да").length,p=used.filter(e=>e.helped==="Частично").length,n=used.filter(e=>e.helped==="Нет").length;
+    const could=entries.filter(e=>(e.couldHelp||[]).includes(m)).length;return {m,used:used.length,y,p,n,could}}).filter(x=>x.used||x.could).sort((a,b)=>b.used-a.used||b.could-a.could);
+  const mx=Math.max(1,...ms.map(x=>x.used));
+  const mlist=ms.length?ms.map(x=>`<div class="mrow"><div class="stack" style="gap:5px;min-width:0"><span>${esc(x.m)}</span>
+    <div class="bar" style="width:${Math.max(8,x.used/mx*100)}%" aria-hidden="true"><i style="width:${x.used?x.y/x.used*100:0}%;background:var(--green)"></i><i style="width:${x.used?x.p/x.used*100:0}%;background:var(--yellow)"></i><i style="width:${x.used?x.n/x.used*100:0}%;background:var(--red)"></i></div></div>
+    <span class="small muted num" style="text-align:right">${x.used}×${x.could?`<br>мог бы: ${x.could}`:""}</span></div>`).join(""):'<p class="muted small">Методов пока не отмечено.</p>';
+  return head+`<div class="stack-lg">${kpi}${table}<div class="card"><p class="label" style="margin-bottom:6px">Методы за всё время</p>
+    <div class="legend" style="margin-bottom:6px"><span><i style="background:var(--green)"></i>помог</span><span><i style="background:var(--yellow)"></i>частично</span><span><i style="background:var(--red)"></i>не помог</span></div>${mlist}</div></div>`;
+}
+
+/* ---------- tools (overlay) ---------- */
+let toolTimer=null;
+function closeTool(){clearInterval(toolTimer);clearTimeout(toolTimer);toolTimer=null;$("#overlay").innerHTML="";document.body.style.overflow=""}
+function openTool(id){
+  closeTool(); document.body.style.overflow="hidden";
+  const o=$("#overlay"); const titles={bubbles:"Пупырка",breath:"Дыхание",wave:"Переждать волну",ground:"5-4-3-2-1",distract:"Таймер отвлечения"};
+  o.innerHTML=`<div class="overlay" role="dialog" aria-label="${titles[id]}"><div class="bar-top"><h2>${titles[id]}</h2><button class="btn" data-act="tool-close">Готово</button></div><div class="content" id="tc"></div></div>`;
+  ({bubbles:toolBubbles,breath:toolBreath,wave:toolWave,ground:toolGround,distract:toolDistract})[id]($("#tc"));
+  if(flow&&view==="flow"){const s=PLANS[zoneOf(flow.before)]?.steps;if(s){const i=s.findIndex(x=>x.tool===id);if(i>=0){flow.done[i]=true;addMethod(s[i].m)}}}
+}
+function toolBubbles(c){
+  let popped=0;
+  const fill=()=>{c.innerHTML=`<p class="muted">Лопай пузыри по одному. Пальцы заняты — позыв проходит.</p><div class="bubbles">${Array.from({length:48},()=>'<button class="bub" aria-label="Пузырь"></button>').join("")}</div>
+    <div class="row" style="justify-content:space-between"><span class="muted small">Лопнуто: <span class="num" id="pc">${popped}</span></span><button class="btn ghost" id="refill">Новый лист</button></div>`;
+    c.querySelectorAll(".bub").forEach(b=>b.addEventListener("pointerdown",()=>{if(b.classList.contains("popped"))return;b.classList.add("popped");popped++;$("#pc").textContent=popped;vib(12);
+      if(!c.querySelector(".bub:not(.popped)"))setTimeout(fill,500)}));
+    $("#refill").onclick=fill;};
+  fill();
+}
+function toolBreath(c){
+  let exh=6,mins=2,running=false;
+  const ui=()=>{c.innerHTML=`<p class="muted">Вдох 4 секунды, выдох длиннее. Следи за кругом.</p>
+    <div class="field"><span class="label">Выдох</span><div class="chips">${[6,7,8].map(v=>`<button class="chip" data-ex="${v}" aria-pressed="${exh===v}">${v} сек</button>`).join("")}</div></div>
+    <div class="field"><span class="label">Длительность</span><div class="chips">${[1,2,3].map(v=>`<button class="chip" data-mi="${v}" aria-pressed="${mins===v}">${v} мин</button>`).join("")}</div></div>
+    <div class="breath"><div class="circle" id="circ"><span id="ph">Начать</span></div></div><p class="big" id="left"></p>
+    <button class="btn primary block" id="go">${running?"Остановить":"Начать"}</button>`;
+    c.querySelectorAll("[data-ex]").forEach(b=>b.onclick=()=>{if(!running){exh=+b.dataset.ex;ui()}});
+    c.querySelectorAll("[data-mi]").forEach(b=>b.onclick=()=>{if(!running){mins=+b.dataset.mi;ui()}});
+    $("#go").onclick=()=>{running?stop():start()};};
+  const stop=()=>{running=false;clearTimeout(toolTimer);toolTimer=null;ui()};
+  const start=()=>{running=true;ui();const end=Date.now()+mins*60000;const circ=$("#circ"),ph=$("#ph"),left=$("#left");
+    const tickLeft=()=>{const s=Math.max(0,Math.round((end-Date.now())/1000));left.textContent=Math.floor(s/60)+":"+pad(s%60)};
+    const inhale=()=>{if(!running)return;if(Date.now()>=end){running=false;ui();$("#ph").textContent="Готово";vib([30,60,30]);return}
+      ph.textContent="Вдох";circ.style.transitionDuration="4s";circ.style.transform="scale(1)";tickLeft();toolTimer=setTimeout(exhale,4000)};
+    const exhale=()=>{if(!running)return;ph.textContent="Выдох";circ.style.transitionDuration=exh+"s";circ.style.transform="scale(.55)";tickLeft();toolTimer=setTimeout(inhale,exh*1000)};
+    const iv=setInterval(()=>{if(!running){clearInterval(iv);return}tickLeft()},1000);
+    inhale();};
+  ui();
+}
+function toolWave(c){
+  const pts=[];const t0=Date.now();
+  const draw=()=>{const W=320,H=170,pl=26,pb=22;const maxT=Math.max(5,...pts.map(p=>p.t));
+    const x=t=>pl+(t/maxT)*(W-pl-8),y=v=>8+(10-v)/10*(H-8-pb);
+    let g="";[0,4,7,10].forEach(v=>{g+=`<line x1="${pl}" x2="${W-8}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="var(--muted)">${v}</text>`});
+    g+=`<text x="${W-8}" y="${H-4}" text-anchor="end" font-size="10" fill="var(--muted)">${Math.round(maxT)} мин</text>`;
+    const path=pts.map((p,i)=>(i?"L":"M")+x(p.t).toFixed(1)+" "+y(p.v).toFixed(1)).join(" ");
+    const dots=pts.map(p=>`<circle cx="${x(p.t)}" cy="${y(p.v)}" r="4" fill="${p.v>=7?"var(--red)":p.v>=4?"var(--yellow)":"var(--green)"}"/>`).join("");
+    $("#wv").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="График позыва">${g}${pts.length>1?`<path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>`:""}${dots}</svg>`;
+    const first=pts[0],last=pts[pts.length-1];
+    $("#wmsg").textContent=!pts.length?"Отметь, сколько сейчас.":pts.length===1?"Хорошо. Через минуту отметь снова.":last.v<first.v?`С ${first.v} до ${last.v}. Волна спадает.`:last.v===first.v?"Держишься на гребне. Это пик, он пройдёт.":"Волна поднимается. Дыши и наблюдай, не действуя.";};
+  c.innerHTML=`<p class="muted">Позыв ведёт себя как волна: растёт, доходит до пика и спадает, если на него не отвечать действием. Раз в минуту отмечай, сколько сейчас.</p>
+    <div class="card wave" id="wv"></div><p id="wmsg" style="font-weight:600"></p>${scaleHtml(null,"wave")}<p class="muted small" id="wt"></p>`;
+  c.addEventListener("click",e=>{const b=e.target.closest('[data-act="wave"]');if(!b)return;pts.push({t:(Date.now()-t0)/60000,v:+b.dataset.v});vib(10);draw()});
+  toolTimer=setInterval(()=>{const s=Math.round((Date.now()-t0)/1000);const el=$("#wt");if(el)el.textContent="Прошло "+Math.floor(s/60)+":"+pad(s%60)},1000);
+  draw();
+}
+function toolGround(c){
+  const S=[[5,"вещей, которые ты видишь"],[4,"вещи, которые можно потрогать — потрогай их"],[3,"звука, которые ты слышишь"],[2,"запаха"],[1,"вкус во рту"]];let i=0;
+  const ui=()=>{if(i>=S.length){c.innerHTML=`<div class="stack-lg" style="text-align:center;padding-top:40px"><h1>Ты здесь.</h1><p class="muted">Позыв можно оценить снова.</p><button class="btn ghost" id="again">Ещё раз</button></div>`;$("#again").onclick=()=>{i=0;ui()};return}
+    const [n,t]=S[i];c.innerHTML=`<div class="stack-lg ground"><p class="label">Шаг ${i+1} из 5</p><h1>Найди ${n} ${t}</h1><p class="muted">Нажимай на кружок за каждое.</p>
+      <div class="count">${Array.from({length:n},()=>'<button class="dot" aria-pressed="false" aria-label="Отметить"></button>').join("")}</div></div>`;
+    c.querySelectorAll(".dot").forEach(d=>d.onclick=()=>{d.setAttribute("aria-pressed","true");vib(10);if(!c.querySelector('.dot[aria-pressed="false"]'))setTimeout(()=>{i++;ui()},400)});};
+  ui();
+}
+function toolDistract(c){
+  const IDEAS=["Разобрать один ящик или полку","Помыть посуду руками","Нарезать овощи для салата","Порисовать или раскрасить что-то","Полепить из пластилина или теста","Сложить бельё","Написать кому-то тёплое сообщение","Выйти на 10 минут пройтись","Посчитать от 100 назад через 7","Включить смешное видео или любимую песню","Перебрать украшения или пуговицы","Полить и обрызгать растения"];
+  let mins=15,running=false,end=0,idea=IDEAS[Math.floor(Math.random()*IDEAS.length)];
+  const ui=()=>{c.innerHTML=`<p class="muted">Займи руки делом, пока позыв не опустится ниже 4. Минимум 10–15 минут.</p>
+    <div class="card stack" style="gap:8px"><p class="label">Идея</p><p style="font-weight:600;font-size:1.1rem">${idea}</p><button class="linkbtn" id="sh">Другая идея</button></div>
+    <div class="chips">${[10,15,20,30].map(v=>`<button class="chip" data-mi="${v}" aria-pressed="${mins===v}">${v} мин</button>`).join("")}</div>
+    <p class="big" id="tl">${mins}:00</p><button class="btn primary block" id="go">${running?"Остановить":"Запустить"}</button>`;
+    $("#sh").onclick=()=>{idea=IDEAS[(IDEAS.indexOf(idea)+1+Math.floor(Math.random()*(IDEAS.length-1)))%IDEAS.length];const keep=running;ui();if(keep)tick()};
+    c.querySelectorAll("[data-mi]").forEach(b=>b.onclick=()=>{if(!running){mins=+b.dataset.mi;ui()}});
+    $("#go").onclick=()=>{if(running){running=false;clearInterval(toolTimer);ui()}else{running=true;end=Date.now()+mins*60000;ui();tick();toolTimer=setInterval(tick,1000)}};};
+  const tick=()=>{const s=Math.max(0,Math.round((end-Date.now())/1000));const el=$("#tl");if(el)el.textContent=Math.floor(s/60)+":"+pad(s%60);if(s===0&&running){running=false;clearInterval(toolTimer);vib([40,80,40]);ui();$("#tl").textContent="Готово. Сколько сейчас?"}};
+  ui();
+}
+
+/* ---------- actions ---------- */
+function addMethod(m){if(flow&&!flow.draft.methods.includes(m))flow.draft.methods.push(m)}
+function syncInputs(){
+  document.querySelectorAll("[data-q]").forEach(i=>{if(flow)flow.answers[i.dataset.q]=i.value});
+  const tgt=view==="flow"&&flow?flow.draft:view==="edit"?editing:null;
+  if(tgt)document.querySelectorAll("[data-f]").forEach(i=>{tgt[i.dataset.f]=i.value});
+}
+document.addEventListener("click",async ev=>{
+  const tb=ev.target.closest(".tabs button");if(tb){tab=tb.dataset.tab;view="home";render();window.scrollTo(0,0);return}
+  const tl=ev.target.closest("[data-tool]");if(tl){syncInputs();openTool(tl.dataset.tool);if(view==="flow")render();return}
+  const ch=ev.target.closest("[data-chip]");
+  if(ch){syncInputs();const tgt=view==="flow"?flow.draft:editing;const f=ch.dataset.chip,v=ch.dataset.v;
+    if(f==="helped"){tgt.helped=tgt.helped===v?"":v}else{const a=tgt[f];const i=a.indexOf(v);i>=0?a.splice(i,1):a.push(v)}
+    ch.setAttribute("aria-pressed",f==="helped"?String(tgt.helped===v):String(tgt[f].includes(v)));
+    if(f==="helped")ch.parentElement.querySelectorAll(".chip").forEach(x=>{if(x!==ch)x.setAttribute("aria-pressed","false")});return}
+  const op=ev.target.closest("[data-open]");if(op){const e=entries.find(x=>x.id===op.dataset.open);if(e){editing=JSON.parse(JSON.stringify(Object.assign({kinds:[],methods:[],couldHelp:[],sources:[],helped:"",situation:"",notes:"",time:""},e)));view="edit";render();window.scrollTo(0,0)}return}
+  const b=ev.target.closest("[data-act]");if(!b)return;const a=b.dataset.act;
+  if(a==="tool-close"){closeTool();if(view==="flow")render();return}
+  if(a==="wave")return;
+  syncInputs();
+  if(a==="sos"||a==="caught"){flow=newFlow(a==="caught");view="flow";render();window.scrollTo(0,0)}
+  else if(a==="next"){flow.step++;if(flow.step===4)flow.after=null;render();window.scrollTo(0,0)}
+  else if(a==="flow-back"){if(flow.step===0){flow=null;view="home"}else flow.step--;render();window.scrollTo(0,0)}
+  else if(a==="before"){flow.before=+b.dataset.v;flow.done={};render()}
+  else if(a==="after"){flow.after=+b.dataset.v;const d=flow.after-flow.before;flow.draft.helped=d<=-3||flow.after<=3?"Да":d<0?"Частично":"Нет";render()}
+  else if(a==="replan"){flow.step=3;render();window.scrollTo(0,0)}
+  else if(a==="tick"){const i=+b.dataset.i;const s=PLANS[zoneOf(flow.before)].steps[i];flow.done[i]=!flow.done[i];if(flow.done[i]){addMethod(s.m);vib(10)}else{flow.draft.methods=flow.draft.methods.filter(m=>m!==s.m)}b.setAttribute("aria-pressed",String(!!flow.done[i]))}
+  else if(a==="save-flow"){const d=flow.draft;const ans=[flow.answers.now&&"Сейчас хочу: "+flow.answers.now,flow.answers.global&&"Глобально хочу: "+flow.answers.global,flow.answers.choose&&"Выбираю: "+flow.answers.choose].filter(Boolean).join("\n");
+    const rec=Object.assign({},d,{before:flow.before,after:flow.after,answers:ans,createdAt:Date.now(),viaFlow:true});
+    if(!rec.kinds.length)rec.kinds=[flow.before>=7?"Приступ":"Позыв"];
+    const sid=await saveEntry(rec);
+    if(sid){flow=null;view="home";tab="diary";render();window.scrollTo(0,0);queueSync(Object.assign({},rec,{id:sid}))}}
+  else if(a==="skip-save"){flow=null;view="home";render()}
+  else if(a==="add"){const n=new Date();editing={date:isoDate(n),time:pad(n.getHours())+":"+pad(n.getMinutes()),before:null,after:null,kinds:[],situation:"",methods:[],helped:"",couldHelp:[],sources:[],notes:""};view="edit";render();window.scrollTo(0,0)}
+  else if(a==="ebefore"){editing.before=+b.dataset.v;render()}
+  else if(a==="eafter"){editing.after=editing.after===+b.dataset.v?null:+b.dataset.v;render()}
+  else if(a==="edit-back"){editing=null;view="home";render()}
+  else if(a==="save-edit"){const rec=Object.assign({},editing);delete rec.sheet;delete rec.sheetErr;if(!rec.createdAt)rec.createdAt=Date.now();const sid=await saveEntry(rec);if(sid){editing=null;view="home";tab="diary";render();queueSync(Object.assign({},rec,{id:sid}))}}
+  else if(a==="del"){if(b.dataset.confirm){const wasSynced=editing.sheet==="ok"||!!editing.sheetAt;await deleteEntry(editing.id);editing=null;view="home";tab="diary";render();toast(wasSynced?"Запись удалена и из таблицы":"Запись удалена")}else{b.dataset.confirm="1";b.textContent="Точно удалить? Нажмите ещё раз"}}
+  else if(a==="resend"){if(!(cfg.url&&cfg.key)){view="settings";render();return}b.disabled=true;await syncPending(false)}
+  else if(a==="settings"){view="settings";render();window.scrollTo(0,0)}
+  else if(a==="settings-back"){view="home";render()}
+  else if(a==="settings-save"){cfg={url:($("#cfg-url").value||"").trim(),key:($("#cfg-key").value||"").trim()};lsWrite(LS_CFG,cfg);toast("Сохранено");view="home";render();syncPending(false)}
+  else if(a==="settings-test"){const u=($("#cfg-url").value||"").trim(),k=($("#cfg-key").value||"").trim();const out=$("#cfg-out");out.textContent="Проверяю…";
+    try{const r=await fetch(u+(u.includes("?")?"&":"?")+"key="+encodeURIComponent(k),{redirect:"follow"});const j=await r.json();out.textContent=j.ok?"Связь есть, ключ верный.":j.error==="bad_key"?"Скрипт отвечает, но ключ не подходит.":"Ошибка: "+(j.error||"")}
+    catch(e){out.textContent="Не удалось связаться. Проверьте адрес скрипта и что он развёрнут с доступом «Все»."}}
+  else if(a==="export"){const blob=new Blob([JSON.stringify(entries,null,1)],{type:"application/json"});const u=URL.createObjectURL(blob);const l=document.createElement("a");l.href=u;l.download="tihie-ruki-"+isoDate(new Date())+".json";l.click();setTimeout(()=>URL.revokeObjectURL(u),2000)}
+});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#overlay").innerHTML){closeTool();if(view==="flow")render()}});
+
+render();
+initStore();
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}
+})();
+</script>
+
+</body>
+</html>
