@@ -143,6 +143,13 @@ textarea,input[type=text],input[type=date],input[type=time]{width:100%;border:0;
 textarea{min-height:80px;resize:vertical}
 .field{display:flex;flex-direction:column;gap:8px}
 .twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+details.review{background:var(--surface);border-radius:var(--r);padding:16px}
+details.review summary{font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:10px}
+details.review summary::-webkit-details-marker{display:none}
+details.review summary::after{content:"+";color:var(--accent);font-weight:700}
+details.review[open] summary::after{content:"–"}
+details.review textarea{background:var(--surface-2)}
+.tag.rv{background:var(--accent-soft);color:#8FB2FF}
 
 /* bottom bar with FAB */
 .tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(14,15,21,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(0px,env(safe-area-inset-left,0px));padding-right:max(0px,env(safe-area-inset-right,0px));z-index:5}
@@ -234,7 +241,7 @@ img{max-width:100%}
 (function(){
 "use strict";
 /* ---------- reference lists ---------- */
-const APP_VERSION="1.2.1";
+const APP_VERSION="1.3.0";
 const METHODS=["Барьер: шапка","Барьер: антистресс","Барьер: кукла","Осознанность: наблюдение","Осознанность: описание","Осознанность: участие","«Стоп!»","Умыться / холодная вода","Движение 30–90 сек","Дыхание с длинным выдохом","Напряжение–расслабление","Смена контекста","Отвлечение","Улучшение момента","Ничего не применила"];
 const SOURCES=["Скука","Усталость","Тревога","Напряжение","Автоматизм / привычка","Залипла в компьютер / телефон","Мысли гоняю","Злость / раздражение","Не знаю"];
 const KINDS=["Позыв","Приступ","Поймала себя в процессе"];
@@ -339,7 +346,7 @@ let tab="home"; let view="home"; let flow=null;
 function newFlow(caught){
   const now=new Date();
   return {caught:!!caught,step:0,before:null,after:null,done:{},answers:{now:"",global:"",choose:""},
-    draft:{date:isoDate(now),time:pad(now.getHours())+":"+pad(now.getMinutes()),kinds:caught?["Поймала себя в процессе"]:[],situation:"",methods:["«Стоп!»"],helped:"",couldHelp:[],sources:[],notes:""}};
+    draft:{date:isoDate(now),time:pad(now.getHours())+":"+pad(now.getMinutes()),kinds:caught?["Поймала себя в процессе"]:[],situation:"",methods:["«Стоп!»"],helped:"",couldHelp:[],sources:[],notes:"",feelings:"",thoughts:"",body:"",behavior:""}};
 }
 
 /* ---------- plans by zone ---------- */
@@ -431,7 +438,7 @@ function scaleHtml(sel,act){let h='<div class="scale" role="group" aria-label="�
 function chipsHtml(list,sel,field){return '<div class="chips">'+list.map(v=>`<button class="chip" data-chip="${field}" data-v="${esc(v)}" aria-pressed="${sel.includes(v)}">${esc(v)}</button>`).join("")+"</div>"}
 
 function renderFlow(){
-  const f=flow; const total=5;
+  const f=flow; const total=7;
   const prog='<div class="progress" aria-hidden="true">'+Array.from({length:total},(_,i)=>`<i class="${i<=f.step?"on":""}"></i>`).join("")+"</div>";
   const top=`<div class="top"><button class="back" data-act="flow-back">${f.step===0?"Закрыть":"Назад"}</button>${prog}</div>`;
   let body="";
@@ -467,7 +474,12 @@ function renderFlow(){
       ${scaleHtml(f.after,"after")}
       ${d!=null?`<p class="card">${d<0?`Позыв снизился на <b class="num">${-d}</b>. Ты справилась.`:d===0?"Позыв на том же уровне. Можно вернуться к плану или взять другой метод.":"Позыв вырос. Попробуй шаги красной зоны: холодная вода и смена места."}</p>`:""}
       ${d!=null&&d>=0?'<button class="btn ghost block" data-act="replan">Вернуться к плану</button>':""}
-      <button class="btn primary block" data-act="next" ${f.after==null?"disabled":""}>Записать в дневник</button></div>`;
+      <button class="btn primary block" data-act="next" ${f.after==null?"disabled":""}>Дальше</button></div>`;
+  }else if(f.step===5){
+    body=`<div class="stack-lg"><div class="stack" style="gap:8px"><h1>Разбор ситуации</h1><p class="muted">По желанию. Помогает увидеть, что запускает позыв. Можно пропустить и дописать позже из дневника.</p></div>
+      ${reviewFields(f.draft)}
+      <button class="btn primary block" data-act="next">Дальше</button>
+      <button class="btn ghost block" data-act="next">Пропустить</button></div>`;
   }else{
     body=`<div class="stack-lg"><h1>Запись в дневник</h1>${entryForm(f.draft,{before:f.before,after:f.after})}
       <button class="btn primary block" data-act="save-flow">Сохранить</button>
@@ -477,13 +489,22 @@ function renderFlow(){
 }
 function qField(k,label){return `<label class="field"><span><b>${label}</b></span><input type="text" data-q="${k}" value="${esc(flow.answers[k])}" autocomplete="off"></label>`}
 
+const REVIEW=[
+  {k:"situation",t:"Ситуация",ph:"Где была, что делала, что произошло перед позывом"},
+  {k:"feelings",t:"Чувства",ph:"Что чувствовала и насколько сильно: тревога, скука, злость, усталость…"},
+  {k:"thoughts",t:"Мысли",ph:"Какие мысли крутились: «надо найти неровный волос», «я не успею»…"},
+  {k:"body",t:"Тело",ph:"Что было в теле: напряжение в руках, зуд, жар, ком в горле…"},
+  {k:"behavior",t:"Поведение",ph:"Что делала: потянулась к голове, искала волоски, применила метод…"}];
+const hasReview=e=>["feelings","thoughts","body","behavior"].some(k=>String(e[k]||"").trim());
+function reviewFields(d,skip){return REVIEW.filter(r=>r.k!==skip).map(r=>`<label class="field"><span class="label">${r.t}</span><textarea data-f="${r.k}" placeholder="${esc(r.ph)}">${esc(d[r.k]||"")}</textarea></label>`).join("")}
 function entryForm(d,lv){
   const lvl=lv?`<div class="row"><span class="zone ${zoneOf(lv.before)}">До: ${lv.before}</span><span class="arrow">→</span><span class="zone ${zoneOf(lv.after)}">После: ${lv.after}</span></div>`:"";
   return `<div class="stack-lg">${lvl}
     <div class="twocol"><label class="field"><span class="label">Дата</span><input type="date" data-f="date" value="${esc(d.date)}"></label>
     <label class="field"><span class="label">Время</span><input type="time" data-f="time" value="${esc(d.time)}"></label></div>
     <div class="field"><span class="label">Что было</span>${chipsHtml(KINDS,d.kinds,"kinds")}</div>
-    <label class="field"><span class="label">Где была, что делала</span><textarea data-f="situation" placeholder="За ноутбуком, лёжа с телефоном…">${esc(d.situation)}</textarea></label>
+    <label class="field"><span class="label">Ситуация: где была, что делала</span><textarea data-f="situation" placeholder="За ноутбуком, лёжа с телефоном…">${esc(d.situation)}</textarea></label>
+    <details class="review"${hasReview(d)?" open":""}><summary>Разбор: чувства, мысли, тело, поведение</summary><div class="stack" style="margin-top:12px">${reviewFields(d,"situation")}</div></details>
     <div class="field"><span class="label">Какой метод применила</span>${chipsHtml(METHODS,d.methods,"methods")}</div>
     <div class="field"><span class="label">Помогло?</span>${chipsHtml(HELPED,d.helped?[d.helped]:[],"helped")}</div>
     <div class="field"><span class="label">Какой метод мог бы помочь</span>${chipsHtml(METHODS.filter(m=>m!=="Ничего не применила"),d.couldHelp,"couldHelp")}</div>
@@ -532,7 +553,7 @@ function renderDiary(){
   return head+'<div class="stack-lg">'+syncBar+groupWeeks(entries).map(([k,v])=>`<section class="week"><p class="label">${fmtWeek(parseDate(k))} · ${v.length}</p>
     ${v.map(e=>{const z=zoneOf(e.before)||"";const za=zoneOf(e.after);return `<button class="entry ${z}" data-open="${esc(e.id)}"><span class="score ${z}">${e.before??"–"}</span><span class="body">
       <span class="head"><b>${fmtDay(e.date)}${e.time?` · <span class="num muted">${esc(e.time)}</span>`:""}</b>${e.after!=null?`<span class="after ${za}">→ ${e.after}</span>`:""}</span>
-      ${e.kinds&&e.kinds.length?`<span>${e.kinds.map(t=>`<span class="tag">${esc(t)}</span>`).join("")}</span>`:""}
+      ${(e.kinds&&e.kinds.length)||hasReview(e)?`<span>${(e.kinds||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join("")}${hasReview(e)?'<span class="tag rv">Разбор</span>':""}</span>`:""}
       ${e.situation?`<span class="small muted">${esc(e.situation)}</span>`:""}
       ${e.methods&&e.methods.length?`<span class="small">${e.methods.map(esc).join(", ")}${e.helped?` · <span class="muted">помогло: ${esc(e.helped)}</span>`:""}</span>`:""}
       <span class="small ${e.sheet==="err"?"bad":"ok"}">${e.sheet==="ok"?"✓ в таблице":e.sheet==="err"?"Не отправлено: "+esc(e.sheetErr||""):"Ещё не в таблице"}</span>
@@ -687,7 +708,7 @@ document.addEventListener("click",async ev=>{
     if(f==="helped"){tgt.helped=tgt.helped===v?"":v}else{const a=tgt[f];const i=a.indexOf(v);i>=0?a.splice(i,1):a.push(v)}
     ch.setAttribute("aria-pressed",f==="helped"?String(tgt.helped===v):String(tgt[f].includes(v)));
     if(f==="helped")ch.parentElement.querySelectorAll(".chip").forEach(x=>{if(x!==ch)x.setAttribute("aria-pressed","false")});return}
-  const op=ev.target.closest("[data-open]");if(op){const e=entries.find(x=>x.id===op.dataset.open);if(e){editing=JSON.parse(JSON.stringify(Object.assign({kinds:[],methods:[],couldHelp:[],sources:[],helped:"",situation:"",notes:"",time:""},e)));view="edit";render();window.scrollTo(0,0)}return}
+  const op=ev.target.closest("[data-open]");if(op){const e=entries.find(x=>x.id===op.dataset.open);if(e){editing=JSON.parse(JSON.stringify(Object.assign({kinds:[],methods:[],couldHelp:[],sources:[],helped:"",situation:"",notes:"",time:"",feelings:"",thoughts:"",body:"",behavior:""},e)));view="edit";render();window.scrollTo(0,0)}return}
   const b=ev.target.closest("[data-act]");if(!b)return;const a=b.dataset.act;
   if(a==="tool-close"){closeTool();if(view==="flow")render();return}
   if(a==="wave")return;
@@ -705,7 +726,7 @@ document.addEventListener("click",async ev=>{
     const sid=await saveEntry(rec);
     if(sid){flow=null;view="home";tab="diary";render();window.scrollTo(0,0);queueSync(Object.assign({},rec,{id:sid}))}}
   else if(a==="skip-save"){flow=null;view="home";render()}
-  else if(a==="add"){const n=new Date();editing={date:isoDate(n),time:pad(n.getHours())+":"+pad(n.getMinutes()),before:null,after:null,kinds:[],situation:"",methods:[],helped:"",couldHelp:[],sources:[],notes:""};view="edit";render();window.scrollTo(0,0)}
+  else if(a==="add"){const n=new Date();editing={date:isoDate(n),time:pad(n.getHours())+":"+pad(n.getMinutes()),before:null,after:null,kinds:[],situation:"",methods:[],helped:"",couldHelp:[],sources:[],notes:"",feelings:"",thoughts:"",body:"",behavior:""};view="edit";render();window.scrollTo(0,0)}
   else if(a==="ebefore"){editing.before=+b.dataset.v;render()}
   else if(a==="eafter"){editing.after=editing.after===+b.dataset.v?null:+b.dataset.v;render()}
   else if(a==="edit-back"){editing=null;view="home";render()}

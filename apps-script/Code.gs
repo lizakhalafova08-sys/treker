@@ -5,6 +5,7 @@
  * Приложение отправляет сюда запись (POST, JSON), скрипт кладёт её в строку нужного дня
  * на листе «Дневник». Повторная отправка той же записи обновляет её строку (по ID).
  * Действие list отдаёт все заполненные строки дневника — из них приложение считает итоги.
+ * Если в записи есть разбор (ситуация, чувства, мысли, тело, поведение), он пишется на лист «Разбор».
  *
  * Ключ доступа хранится в свойствах скрипта, а не в коде: запустите функцию setup() один раз
  * и скопируйте ключ из журнала выполнения в настройки приложения.
@@ -17,6 +18,8 @@ const HEAD = {
   sources: 'Источник', notes: 'Заметки', id: 'ID записи'
 };
 const DAYS = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+const REVIEW_SHEET = 'Разбор';
+const REVIEW_HEAD = ['Дата', 'Время', 'Позыв, 0–10', 'Ситуация', 'Чувства', 'Мысли', 'Тело', 'Поведение', 'ID записи (приложение)'];
 
 /** Запустить один раз: создаёт ключ доступа и печатает его в журнал. */
 function setup() {
@@ -42,9 +45,11 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    if (body.action === 'delete') return json_(deleteEntry_(body.id));
+    if (body.action === 'delete') { deleteReview_(body.id); return json_(deleteEntry_(body.id)); }
     if (body.action === 'list') return json_(listEntries_());
-    return json_(writeEntry_(body.entry));
+    const res = writeEntry_(body.entry);
+    res.review = writeReview_(body.entry);
+    return json_(res);
   } catch (err) {
     return json_({ ok: false, error: String(err && err.message || err) });
   } finally {
@@ -119,6 +124,61 @@ function writeEntry_(rec) {
       '=IF(' + bl + n + '="","",IF(' + bl + n + '>=7,"Красная",IF(' + bl + n + '>=4,"Жёлтая","Зелёная")))');
   }
   return { ok: true, row: n };
+}
+
+/** Лист «Разбор»: одна строка на запись, в которой заполнен хотя бы один пункт разбора. */
+function reviewSheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(REVIEW_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(REVIEW_SHEET, 1);
+    sh.getRange(1, 1, 1, REVIEW_HEAD.length).setValues([REVIEW_HEAD]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+    sh.hideColumns(REVIEW_HEAD.length);
+  }
+  return sh;
+}
+
+function writeReview_(rec) {
+  const f = ['feelings', 'thoughts', 'body', 'behavior'];
+  const has = f.some(k => String(rec[k] || '').trim());
+  const sh = reviewSheet_();
+  const last = sh.getLastRow();
+  const ids = last > 1 ? sh.getRange(2, REVIEW_HEAD.length, last - 1, 1).getValues().map(r => r[0]) : [];
+  const at = ids.indexOf(rec.id);
+  if (!has) {
+    if (at >= 0) sh.deleteRow(at + 2);
+    return null;
+  }
+  const p = rec.date.split('-');
+  const row = [new Date(+p[0], +p[1] - 1, +p[2]), text_(rec.time), rec.before == null ? '' : rec.before,
+    text_(rec.situation), text_(rec.feelings), text_(rec.thoughts), text_(rec.body), text_(rec.behavior), rec.id];
+  let n;
+  if (at >= 0) n = at + 2;
+  else {
+    // держим лист в порядке дат: новая строка встаёт после последней записи с той же или более ранней датой
+    const dates = last > 1 ? sh.getRange(2, 1, last - 1, 2).getValues() : [];
+    const key = rec.date + ' ' + (rec.time || '');
+    let pos = dates.length;
+    for (let i = dates.length - 1; i >= 0; i--) {
+      const d = dates[i][0];
+      const k = d instanceof Date ? Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM-dd') + ' ' + String(dates[i][1] || '') : '';
+      if (k && k > key) pos = i; else break;
+    }
+    if (pos < dates.length) { sh.insertRowBefore(pos + 2); n = pos + 2; }
+    else n = last + 1;
+  }
+  sh.getRange(n, 1, 1, row.length).setValues([row]);
+  sh.getRange(n, 1).setNumberFormat('dd.mm.yyyy');
+  return n;
+}
+
+function deleteReview_(id) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(REVIEW_SHEET);
+  if (!sh || sh.getLastRow() < 2) return;
+  const ids = sh.getRange(2, REVIEW_HEAD.length, sh.getLastRow() - 1, 1).getValues().map(r => r[0]);
+  const at = ids.indexOf(id);
+  if (at >= 0) sh.deleteRow(at + 2);
 }
 
 /** Все заполненные строки «Дневника» — для итогов в приложении. */
