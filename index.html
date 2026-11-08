@@ -79,6 +79,9 @@ p{margin:0}
 .sos span{opacity:.85;font-size:.86rem}
 .sos .go{flex:none;width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center}
 .sos .go svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2.2}
+.banner{border-radius:var(--r);padding:18px 20px;background:linear-gradient(135deg,rgba(60,123,255,.22),rgba(60,123,255,.06));border:1px solid rgba(60,123,255,.35);display:flex;flex-direction:column;gap:8px}
+.banner p{font-size:1.05rem;font-weight:600;line-height:1.35}
+.banner .sub{font-size:.88rem;font-weight:500;color:#AFC6FF}
 .caught{width:100%;border:0;border-radius:var(--r);background:var(--surface);padding:16px 18px;text-align:left;display:flex;justify-content:space-between;align-items:center;gap:12px}
 .caught .go{color:var(--muted)}
 
@@ -242,7 +245,7 @@ img{max-width:100%}
 (function(){
 "use strict";
 /* ---------- reference lists ---------- */
-const APP_VERSION="1.4.0";
+const APP_VERSION="1.4.1";
 const METHODS=["Барьер: шапка","Барьер: антистресс","Барьер: кукла","Осознанность: наблюдение","Осознанность: описание","Осознанность: участие","«Стоп!»","Умыться / холодная вода","Движение 30–90 сек","Дыхание с длинным выдохом","Напряжение–расслабление","Смена контекста","Отвлечение","Улучшение момента","Ничего не применила"];
 const SOURCES=["Скука","Усталость","Тревога","Напряжение","Автоматизм / привычка","Залипла в компьютер / телефон","Мысли гоняю","Злость / раздражение","Не знаю"];
 const KINDS=["Позыв","Приступ","Поймала себя в процессе"];
@@ -416,8 +419,7 @@ function renderHome(){
     <div class="hdr"><div class="date"><span class="ibtn" aria-hidden="true">${svgI("cal")}</span><div><small>${WD_FULL[(now.getDay()+6)%7]}</small><b>${now.getDate()} ${MON_G[now.getMonth()]}</b></div></div>
       <button class="ibtn" data-act="settings" aria-label="Настройки">${svgI("gear")}</button></div>
     <div class="days" aria-label="Эта неделя">${strip}</div>
-    <button class="sos" data-act="sos"><span><b>Мне сейчас тянет</b><span>Стоп, три вопроса и план по силе позыва</span></span><span class="go">${svgI("arrow")}</span></button>
-    <button class="caught" data-act="caught"><span><b>Поймала себя в процессе</b><br><span class="muted small">Руки уже в волосах</span></span><span class="go" aria-hidden="true">→</span></button>
+    <div class="banner"><p>Работаем на долгосрок.<br>Убери руку, заполни таблицу.</p><p class="sub">Пока я не учусь, я не смогу решить эту проблему.</p></div>
     <div class="stack"><p class="sec-title">Твоя неделя</p>
       <div class="grid2">
         <div class="mini"><div class="t">Эпизоды ${svgI("ring")}</div><div class="ring">${ringSvg(cnt.g,cnt.y,cnt.r,noScore)}<div class="c"><b>${wkAll.length}</b><span>за неделю</span></div></div>
@@ -429,6 +431,8 @@ function renderHome(){
           <div class="row" style="justify-content:space-between;align-items:flex-end"><span class="bignum" style="color:${av==null?"var(--ink)":`var(--${{g:"green",y:"yellow",r:"red"}[zoneOf(av)]})`}">${av??"–"}<small>до методов</small></span>
           <span class="bignum" style="font-size:1.6rem;color:${avA==null?"var(--muted)":`var(--${{g:"green",y:"yellow",r:"red"}[zoneOf(avA)]})`}">${avA??"–"}<small>после</small></span></div></div>
       </div></div>
+    <button class="sos" data-act="sos"><span><b>Мне сейчас тянет</b><span>Стоп, три вопроса и план по силе позыва</span></span><span class="go">${svgI("arrow")}</span></button>
+    <button class="caught" data-act="caught"><span><b>Поймала себя в процессе</b><br><span class="muted small">Руки уже в волосах</span></span><span class="go" aria-hidden="true">→</span></button>
     <div class="stack"><p class="sec-title">Руки и дыхание</p>
       <div class="tools">
         ${toolBtn("bubbles","Пупырка","Лопать пузыри",'<circle cx="8" cy="8" r="3"/><circle cx="16" cy="8" r="3"/><circle cx="8" cy="16" r="3"/><circle cx="16" cy="16" r="3"/>')}
