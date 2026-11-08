@@ -4,6 +4,7 @@
  * Скрипт привязан к таблице (Расширения → Apps Script) и развёрнут как веб-приложение.
  * Приложение отправляет сюда запись (POST, JSON), скрипт кладёт её в строку нужного дня
  * на листе «Дневник». Повторная отправка той же записи обновляет её строку (по ID).
+ * Действие list отдаёт все заполненные строки дневника — из них приложение считает итоги.
  *
  * Ключ доступа хранится в свойствах скрипта, а не в коде: запустите функцию setup() один раз
  * и скопируйте ключ из журнала выполнения в настройки приложения.
@@ -42,6 +43,7 @@ function doPost(e) {
   lock.waitLock(20000);
   try {
     if (body.action === 'delete') return json_(deleteEntry_(body.id));
+    if (body.action === 'list') return json_(listEntries_());
     return json_(writeEntry_(body.entry));
   } catch (err) {
     return json_({ ok: false, error: String(err && err.message || err) });
@@ -117,6 +119,30 @@ function writeEntry_(rec) {
       '=IF(' + bl + n + '="","",IF(' + bl + n + '>=7,"Красная",IF(' + bl + n + '>=4,"Жёлтая","Зелёная")))');
   }
   return { ok: true, row: n };
+}
+
+/** Все заполненные строки «Дневника» — для итогов в приложении. */
+function listEntries_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
+  const { values, hi, C } = layout_(sh);
+  const dataCols = ['time', 'kinds', 'situation', 'before', 'after', 'methods', 'helped', 'could', 'sources', 'notes']
+    .map(k => C[k]).filter(i => i >= 0);
+  const get = (r, k) => (C[k] >= 0 ? String(r[C[k]] || '').trim() : '');
+  const list = s => s ? s.split(',').map(x => x.trim()).filter(Boolean) : [];
+  const num = s => { const n = parseFloat(String(s).replace(',', '.')); return isNaN(n) ? null : n; };
+  const rows = [];
+  values.forEach((r, i) => {
+    if (i <= hi) return;
+    const m = String(r[1] || '').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (!m || !dataCols.some(c => String(r[c] || '').trim())) return;
+    rows.push({
+      id: get(r, 'id') || ('row' + (i + 1)), date: m[3] + '-' + m[2] + '-' + m[1], time: get(r, 'time'),
+      kinds: list(get(r, 'kinds')), situation: get(r, 'situation'), before: num(get(r, 'before')), after: num(get(r, 'after')),
+      methods: list(get(r, 'methods')), helped: get(r, 'helped'), couldHelp: list(get(r, 'could')),
+      sources: list(get(r, 'sources')), notes: get(r, 'notes')
+    });
+  });
+  return { ok: true, rows: rows, at: new Date().toISOString() };
 }
 
 function deleteEntry_(id) {
