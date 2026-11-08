@@ -234,7 +234,7 @@ img{max-width:100%}
 (function(){
 "use strict";
 /* ---------- reference lists ---------- */
-const APP_VERSION="1.2.0";
+const APP_VERSION="1.2.1";
 const METHODS=["Барьер: шапка","Барьер: антистресс","Барьер: кукла","Осознанность: наблюдение","Осознанность: описание","Осознанность: участие","«Стоп!»","Умыться / холодная вода","Движение 30–90 сек","Дыхание с длинным выдохом","Напряжение–расслабление","Смена контекста","Отвлечение","Улучшение момента","Ничего не применила"];
 const SOURCES=["Скука","Усталость","Тревога","Напряжение","Автоматизм / привычка","Залипла в компьютер / телефон","Мысли гоняю","Злость / раздражение","Не знаю"];
 const KINDS=["Позыв","Приступ","Поймала себя в процессе"];
@@ -725,7 +725,11 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#overlay").inner
 
 render();
 initStore();
-if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js").catch(()=>{})})}
+if("serviceWorker" in navigator){
+  const hadController=!!navigator.serviceWorker.controller; let reloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadController&&!reloaded&&view!=="flow"&&view!=="edit"){reloaded=true;location.reload()}});
+  window.addEventListener("load",()=>{navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>{
+    document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")r.update().catch(()=>{})})}).catch(()=>{})})}
 })();
 </script>
 
