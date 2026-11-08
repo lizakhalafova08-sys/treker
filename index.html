@@ -65,6 +65,7 @@ p{margin:0}
 .dots i.y{background:var(--yellow);box-shadow:0 0 8px var(--yellow)}
 .dots i.r{background:var(--red);box-shadow:0 0 8px var(--red)}
 .dots i.none{background:var(--surface-3)}
+.dots i.u{background:var(--ink);opacity:.55}
 .day.today .dots i.none{background:rgba(255,255,255,.35)}
 
 /* hero buttons */
@@ -241,7 +242,7 @@ img{max-width:100%}
 (function(){
 "use strict";
 /* ---------- reference lists ---------- */
-const APP_VERSION="1.3.0";
+const APP_VERSION="1.4.0";
 const METHODS=["Барьер: шапка","Барьер: антистресс","Барьер: кукла","Осознанность: наблюдение","Осознанность: описание","Осознанность: участие","«Стоп!»","Умыться / холодная вода","Движение 30–90 сек","Дыхание с длинным выдохом","Напряжение–расслабление","Смена контекста","Отвлечение","Улучшение момента","Ничего не применила"];
 const SOURCES=["Скука","Усталость","Тревога","Напряжение","Автоматизм / привычка","Залипла в компьютер / телефон","Мысли гоняю","Злость / раздражение","Не знаю"];
 const KINDS=["Позыв","Приступ","Поймала себя в процессе"];
@@ -388,19 +389,24 @@ const ICON={gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0
   cal:'<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
   ring:'<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 8 8"/>',bars:'<path d="M6 20V11M12 20V5M18 20v-6"/>',wave:'<path d="M3 15c3-6 5-6 7 0s4 6 7 0 3-3 4-3"/>'};
 const svgI=k=>`<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[k]}</svg>`;
+const isAttack=e=>(e.kinds||[]).some(k=>/Приступ/.test(k));
+function daysElapsed(mondayIso){const m=parseDate(mondayIso);const t=parseDate(isoDate(new Date()));const d=Math.floor((t-m)/864e5)+1;return Math.max(1,Math.min(7,d))}
+function attackStats(es,mondayIso){const at=es.filter(isAttack);const days=new Set(at.map(e=>e.date)).size;const per=Math.round(at.length/daysElapsed(mondayIso)*10)/10;return {attacks:at.length,days,per}}
 function weekDays(){const m=mondayOf(isoDate(new Date()));return Array.from({length:7},(_,i)=>{const d=new Date(m);d.setDate(m.getDate()+i);return isoDate(d)})}
-function ringSvg(g,y,r){const tot=g+y+r;const R=42,C=2*Math.PI*R;let off=0;let segs="";
-  if(tot){[[g,"var(--green)"],[y,"var(--yellow)"],[r,"var(--red)"]].forEach(([v,c])=>{if(!v)return;const len=v/tot*C;const gap=tot>1&&v<tot?3:0;
+function ringSvg(g,y,r,n){n=n||0;const tot=g+y+r+n;const R=42,C=2*Math.PI*R;let off=0;let segs="";
+  if(tot){[[g,"var(--green)"],[y,"var(--yellow)"],[r,"var(--red)"],[n,"var(--muted)"]].forEach(([v,c])=>{if(!v)return;const len=v/tot*C;const gap=tot>1&&v<tot?3:0;
     segs+=`<circle cx="50" cy="50" r="${R}" fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${Math.max(0.1,len-gap)} ${C}" stroke-dashoffset="${-off}" style="filter:drop-shadow(0 0 4px ${c})"/>`;off+=len})}
   return `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--surface-2)" stroke-width="8"/>${segs}</svg>`}
 function renderHome(){
   const now=new Date(); const today=isoDate(now);
   const list=statsSource().list; const days=weekDays();
   const byDay={}; list.forEach(e=>{(byDay[e.date]=byDay[e.date]||[]).push(e)});
-  const strip=days.map((d,i)=>{const es=(byDay[d]||[]).filter(e=>e.before!=null);const z=es.map(e=>zoneOf(e.before)).sort((a,b)=>"gyr".indexOf(b)-"gyr".indexOf(a)).slice(0,3);
+  const strip=days.map((d,i)=>{const es=byDay[d]||[];const z=es.map(e=>e.before!=null?zoneOf(e.before):"u").sort((a,b)=>"ugyr".indexOf(b)-"ugyr".indexOf(a)).slice(0,3);
     return `<div class="day${d===today?" today":""}"><span class="n">${parseDate(d).getDate()}</span><span class="w">${DAYS[i]}</span><span class="dots">${z.length?z.map(x=>`<i class="${x}"></i>`).join(""):'<i class="none"></i>'}</span></div>`}).join("");
-  const wk=list.filter(e=>days.includes(e.date)&&e.before!=null);
-  const cnt={g:0,y:0,r:0};wk.forEach(e=>cnt[zoneOf(e.before)]++);
+  const wkAll=list.filter(e=>days.includes(e.date));
+  const wk=wkAll.filter(e=>e.before!=null);
+  const cnt={g:0,y:0,r:0};wk.forEach(e=>cnt[zoneOf(e.before)]++);const noScore=wkAll.length-wk.length;
+  const ast=attackStats(wkAll,days[0]);
   const bars=days.map((d,i)=>{const es=(byDay[d]||[]).filter(e=>e.before!=null);const mx=es.length?Math.max(...es.map(e=>e.before)):null;const z=zoneOf(mx);
     return `<div class="b"><i style="height:${mx==null?8:Math.max(10,mx*9)}px;background:${z?`var(--${{g:"green",y:"yellow",r:"red"}[z]})`:"var(--surface-3)"};${z?`box-shadow:0 0 10px -1px var(--${{g:"green",y:"yellow",r:"red"}[z]})`:""}"></i><span>${DAYS[i].slice(0,1)}</span></div>`}).join("");
   const avg=a=>a.length?Math.round(a.reduce((s,x)=>s+x,0)/a.length*10)/10:null;
@@ -414,9 +420,11 @@ function renderHome(){
     <button class="caught" data-act="caught"><span><b>Поймала себя в процессе</b><br><span class="muted small">Руки уже в волосах</span></span><span class="go" aria-hidden="true">→</span></button>
     <div class="stack"><p class="sec-title">Твоя неделя</p>
       <div class="grid2">
-        <div class="mini"><div class="t">Эпизоды ${svgI("ring")}</div><div class="ring">${ringSvg(cnt.g,cnt.y,cnt.r)}<div class="c"><b>${wk.length}</b><span>за неделю</span></div></div>
-          <div class="legend"><span><i style="background:var(--green)"></i>${cnt.g}</span><span><i style="background:var(--yellow)"></i>${cnt.y}</span><span><i style="background:var(--red)"></i>${cnt.r}</span></div></div>
+        <div class="mini"><div class="t">Эпизоды ${svgI("ring")}</div><div class="ring">${ringSvg(cnt.g,cnt.y,cnt.r,noScore)}<div class="c"><b>${wkAll.length}</b><span>за неделю</span></div></div>
+          <div class="legend"><span><i style="background:var(--green)"></i>${cnt.g}</span><span><i style="background:var(--yellow)"></i>${cnt.y}</span><span><i style="background:var(--red)"></i>${cnt.r}</span>${noScore?`<span><i style="background:var(--muted)"></i>${noScore} без балла</span>`:""}</div></div>
         <div class="mini"><div class="t">По дням ${svgI("bars")}</div><div class="bars">${bars}</div><p class="small muted">Самый сильный позыв за день</p></div>
+        <div class="mini"><div class="t">Дней с приступом</div><span class="bignum" style="color:${ast.days?"var(--red)":"var(--green)"}">${ast.days}<small>из ${daysElapsed(days[0])}</small></span><p class="small muted">Приступов: ${ast.attacks}</p></div>
+        <div class="mini"><div class="t">Приступов в день</div><span class="bignum" style="color:${ast.per>=1?"var(--red)":ast.per>0?"var(--yellow)":"var(--green)"}">${String(ast.per).replace(".",",")}</span><p class="small muted">в среднем на этой неделе</p></div>
         <div class="mini" style="grid-column:1/-1"><div class="t">Средний позыв ${svgI("wave")}</div>
           <div class="row" style="justify-content:space-between;align-items:flex-end"><span class="bignum" style="color:${av==null?"var(--ink)":`var(--${{g:"green",y:"yellow",r:"red"}[zoneOf(av)]})`}">${av??"–"}<small>до методов</small></span>
           <span class="bignum" style="font-size:1.6rem;color:${avA==null?"var(--muted)":`var(--${{g:"green",y:"yellow",r:"red"}[zoneOf(avA)]})`}">${avA??"–"}<small>после</small></span></div></div>
@@ -579,13 +587,21 @@ function renderStats(){
   const avg=a=>a.length?Math.round(a.reduce((s,x)=>s+x,0)/a.length*10)/10:null;
   const pairs=list.filter(e=>e.before!=null&&e.after!=null);
   const drop=avg(pairs.map(e=>e.before-e.after));
-  const kpi=`<div class="kpis"><div class="kpi"><b>${thisW.length}</b><span class="small muted">эпизодов на этой неделе</span></div>
-    <div class="kpi"><b>${avg(thisW.filter(e=>e.before!=null).map(e=>e.before))??"–"}</b><span class="small muted">средний позыв за неделю</span></div>
-    <div class="kpi"><b>${list.length}</b><span class="small muted">эпизодов всего</span></div></div>
+  const tws=attackStats(thisW,curW); const scored=thisW.filter(e=>e.before!=null);
+  const allAt=list.filter(isAttack); const firstDay=list.map(e=>e.date).sort()[0];
+  const spanDays=firstDay?Math.max(1,Math.floor((parseDate(isoDate(new Date()))-parseDate(firstDay))/864e5)+1):1;
+  const kpi=`<p class="sec-title">Эта неделя</p><div class="kpis"><div class="kpi"><b>${thisW.length}</b><span class="small muted">эпизодов</span></div>
+    <div class="kpi"><b>${scored.length}</b><span class="small muted">с оценкой позыва</span></div>
+    <div class="kpi"><b>${avg(scored.map(e=>e.before))??"–"}</b><span class="small muted">средний позыв</span></div>
+    <div class="kpi"><b style="color:${tws.days?"var(--red)":"var(--green)"}">${tws.days}</b><span class="small muted">дней с приступом из ${daysElapsed(curW)}</span></div>
+    <div class="kpi"><b>${tws.attacks}</b><span class="small muted">приступов</span></div>
+    <div class="kpi"><b>${String(tws.per).replace(".",",")}</b><span class="small muted">приступов в день</span></div></div>
+    <p class="small muted">За всё время: эпизодов ${list.length}, с оценкой ${list.filter(e=>e.before!=null).length}, приступов ${allAt.length}, дней с приступом ${new Set(allAt.map(e=>e.date)).size}, в среднем ${String(Math.round(allAt.length/spanDays*10)/10).replace(".",",")} приступа в день.</p>
     ${drop!=null?`<p class="small muted">После методов позыв в среднем ${drop>0?"снижается на":"меняется на"} <b class="num">${Math.abs(drop)}</b> (по ${pairs.length} записям с оценкой «после»).</p>`:""}`;
   const zc=v=>v==null?"":"z"+zoneOf(v);
   const rows=weeks.map(([k,v])=>{const b=v.filter(e=>e.before!=null).map(e=>e.before);const a=v.filter(e=>e.after!=null).map(e=>e.after);const ab=avg(b),aa=avg(a);
-    return `<tr><td>${fmtWeek(parseDate(k))}</td><td>${v.length}</td><td class="${zc(ab)}">${ab??"–"}</td><td class="${zc(aa)}">${aa??"–"}</td><td class="${b.filter(x=>x>=7).length?"zr":""}">${b.filter(x=>x>=7).length}</td></tr>`}).join("");
+    const st=attackStats(v,k);
+    return `<tr><td>${fmtWeek(parseDate(k))}</td><td>${v.length}</td><td>${b.length}</td><td class="${zc(ab)}">${ab??"–"}</td><td class="${zc(aa)}">${aa??"–"}</td><td class="${st.days?"zr":""}">${st.days}</td><td>${String(st.per).replace(".",",")}</td></tr>`}).join("");
   const pts=list.filter(e=>e.before!=null).slice().sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||""))).slice(-40);
   let chart="";
   if(pts.length>1){const W=340,H=170,pl=22,pr=8,pt=10,pb=22;const x=i=>pl+i*(W-pl-pr)/(pts.length-1),y=v=>pt+(10-v)/10*(H-pt-pb);
@@ -599,7 +615,7 @@ function renderStats(){
       ${[0,4,7,10].map(v=>`<text x="${pl-6}" y="${y(v)+3}" text-anchor="end" font-size="9" fill="var(--muted)">${v}</text>`).join("")}
       <path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.2"/>${dots}
       <text x="${pl}" y="${H-4}" font-size="9" fill="var(--muted)">${lab(f)}</text><text x="${W-pr}" y="${H-4}" text-anchor="end" font-size="9" fill="var(--muted)">${lab(l)}</text></svg></div>`}
-  const table=`<div class="card"><p class="sec-title" style="margin-bottom:6px">По неделям</p><div class="scroll-x"><table class="wtable"><thead><tr><th>Неделя</th><th>Эпизоды</th><th>До</th><th>После</th><th>Красн.</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  const table=`<div class="card"><p class="sec-title" style="margin-bottom:6px">По неделям</p><div class="scroll-x"><table class="wtable"><thead><tr><th>Неделя</th><th>Эпиз.</th><th>С баллом</th><th>До</th><th>После</th><th>Дни с пр.</th><th>Пр./день</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   const all=[...new Set(METHODS.concat(...list.map(e=>(e.methods||[]).concat(e.couldHelp||[]))))];
   const ms=all.map(m=>{const used=list.filter(e=>has(e,"methods",m));const y=used.filter(e=>helpedIs(e,"Да")).length,p=used.filter(e=>helpedIs(e,"Частично")).length,n=used.filter(e=>helpedIs(e,"Нет")).length;
     const could=list.filter(e=>has(e,"couldHelp",m)).length;return {m,used:used.length,y,p,n,could}}).filter(x=>x.used||x.could).sort((a,b)=>b.used-a.used||b.could-a.could);
